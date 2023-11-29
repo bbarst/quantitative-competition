@@ -49,6 +49,7 @@ while True:
     responses_list.append(responses)
     
     if (responses[-1]['status']!='Success'):
+        responses_list.pop(-1)
         filepath = os.path.join(current_dir, 'data.pkl')
         if os.path.exists(filepath):
             os.remove(filepath)
