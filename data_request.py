@@ -9,7 +9,7 @@ current_dir = os.getcwd()
 
 #async调取多个instrument
 async def send_post_request(session, url, data):
-    async with session.post(url, json=data) as response:
+    async with session.post(url, json=data,timeout=aiohttp.ClientTimeout(total=10)) as response:
         return await response.json()
 
 async def main(url, data_list):
@@ -52,7 +52,7 @@ while True:
     
     if (responses[-1]['status']=='Success'):
         responses_list.append(responses)
-    elif (responses[-1]['status']!='Success')and(not responses_list):
+    elif (responses[-1]['status']!='Success')and(responses_list):
         filepath = os.path.join(current_dir, f'data{k}.pkl')
         if os.path.exists(filepath):
             os.remove(filepath)
