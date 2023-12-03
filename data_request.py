@@ -47,7 +47,7 @@ data_list = [{"token_ub": token_ub, "instrument": instrument} for instrument in 
 responses_list = []
 while True:
     
-    responses = asyncio.run(main(url, data_list))#if error, use 'reponses = await main(url, data_list)'
+    responses = asyncio.run(main(url, data_list))#if error, use 'responses = await main(url, data_list)'
     responses_list.append(responses)
     
     if (responses[-1]['status']!='Success'):
