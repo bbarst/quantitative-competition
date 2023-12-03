@@ -13,7 +13,8 @@ async def send_post_request(session, url, data):
         return await response.json()
 
 async def main(url, data_list):
-    async with aiohttp.ClientSession() as session:
+    connector = aiohttp.TCPConnector(limit=50)
+    async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [send_post_request(session, url, data) for data in data_list]
         responses = await asyncio.gather(*tasks)
         session.close()
@@ -43,17 +44,19 @@ for instrument in response["instruments"]:
 #获取数据
 url = domain_name + "/api/TradeAPI/GetLimitOrderBook"
 data_list = [{"token_ub": token_ub, "instrument": instrument} for instrument in instruments]
-
+k = 0
 responses_list = []
 while True:
     
     responses = asyncio.run(main(url, data_list))#if error, use 'responses = await main(url, data_list)'
-    responses_list.append(responses)
     
-    if (responses[-1]['status']!='Success'):
-        responses_list.pop(-1)
-        filepath = os.path.join(current_dir, 'data.pkl')
+    if (responses[-1]['status']=='Success'):
+        responses_list.append(responses)
+    elif (responses[-1]['status']!='Success')and(not responses_list):
+        filepath = os.path.join(current_dir, f'data{k}.pkl')
         if os.path.exists(filepath):
             os.remove(filepath)
         joblib.dump(responses_list, filepath)
+        k += 1
+        responses_list = []
     
