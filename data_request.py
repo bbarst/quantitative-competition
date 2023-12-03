@@ -13,7 +13,7 @@ async def send_post_request(session, url, data):
         return await response.json()
 
 async def main(url, data_list):
-    connector = aiohttp.TCPConnector(limit=50)
+    connector = aiohttp.TCPConnector(limit=10)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [send_post_request(session, url, data) for data in data_list]
         responses = await asyncio.gather(*tasks)
