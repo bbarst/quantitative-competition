@@ -3,7 +3,6 @@ import json
 import time
 import logging
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
@@ -49,13 +48,15 @@ class InterfaceClass:
         response = self.session.post(url, data=json.dumps(data)).json()
         try:
             logger.debug(
-                "Order: localtime:{}, Index: {}, Instrument: {}, Direction:{}, Price: {}, Volume:{}".format(localtime,
-                                                                                                            response[
-                                                                                                                'index'],
-                                                                                                            instrument,
-                                                                                                            direction,
-                                                                                                            price,
-                                                                                                            volume))
+                "Order: localtime:{}, Index: {}, Instrument: {}, "
+                "Direction:{}, Price: {}, Volume:{}".format(
+                    localtime,
+                    response['index'],
+                    instrument,
+                    direction,
+                    price,
+                    volume)
+            )
         except:
             print(response)
         return response

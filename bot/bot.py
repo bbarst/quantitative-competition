@@ -6,14 +6,13 @@ SimTimeLen = 14400
 endWaitTime = 300
 
 
-def bot_fun(index_id):
+def bot_fun(symbol):
     kappa_list = [[100, 100] for i in range(29)]
     penalty_list = [0.0002 for i in range(29)]
     lambda_list = [[1, 1] for i in range(29)]
     upper_q_list = [3 for i in range(29)]
     alpha_list = [0.0001 for i in range(29)]
     last_t = 0
-    symbol = 18
 
     # run the strategy
     bot = QuantBot('UBIQ_TEAM359', "eeKvoJiLv")
@@ -49,6 +48,7 @@ def bot_fun(index_id):
 
 
 if __name__ == '__main__':
-    workers = 10
+    workers = 1
+    symbol_list = [18]
     with ProcessPoolExecutor(max_workers=workers) as executor:
-        executor.map(bot_fun, range(workers))
+        executor.map(bot_fun, symbol_list)

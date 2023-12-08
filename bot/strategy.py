@@ -53,8 +53,9 @@ class QuantBot:
         self.GetInstruments()
         self.day = 0
 
-        self.activeorder_buy = [np.empty((0, 3)) for i in range(
-            29)]  # the activeorder_buy/sell is of the form [[order_index1,order_price1,order_volume1],[order_index2,order_price2,order_volume2]...]
+        # the activeorder_buy/sell is of the form
+        # [[order_index1,order_price1,order_volume1],[order_index2,order_price2,order_volume2]...]
+        self.activeorder_buy = [np.empty((0, 3)) for i in range(29)]
         self.activeorder_sell = [np.empty((0, 3)) for i in range(29)]  # update active order
         self.position = np.zeros(29)
         self.real_pos = np.zeros(29)
@@ -75,18 +76,20 @@ class QuantBot:
         lambda_pos = self.lambda_list[target][0]
         lambda_neg = self.lambda_list[target][1]
         LOB = self.api.sendGetLimitOrderBook(self.token_ub, self.instruments[target])  # get LOB
-        trade_info = self.api.sendGetTrade(self.token_ub, self.instruments[
-            target])  # trade_info contains all order being traded in the last 0.1s, get trade_info so you can update your activeorder, refer to picture in wechat group for the form of trade_info
+        # trade_info contains all order being traded in the last 0.1s,
+        # get trade_info so you can update your activeorder,
+        # refer to picture in wechat group for the form of trade_info
+        trade_info = self.api.sendGetTrade(self.token_ub, self.instruments[target])
         t = ConvertToSimTime_us(self.start_time, self.time_ratio, self.day, self.running_time)
 
         # update active order
-        if (trade_info['trade_list']):
+        if trade_info['trade_list']:
             if (trade_info['trade_list'][-1]['trade_index']) not in self.trade_list[target]:
                 for order in trade_info['trade_list']:
                     if order['trade_index'] not in self.trade_list[target]:  # 这里可以优化
                         self.trade_list.append(order['trade_index'])
-                        if order['order_index'] in self.activeorder_buy[target][:,
-                                                   0]:  # for every buy order seccessfully traded, add volume to position and update your activeorder
+                        # for every buy order seccessfully traded, add volume to position and update your activeorder
+                        if order['order_index'] in self.activeorder_buy[target][:, 0]:
                             self.position[target] += order['trade_volume']
                             index = np.where(self.activeorder_buy[target][:, 0] == order['order_index'])
                             if order['remain_volume'] == 0:
@@ -115,7 +118,7 @@ class QuantBot:
             bidvol = np.array([float(k) for k in LOB["lob"]["bidvolume"]])
             mid = (askprice[0] + bidprice[0]) / 2
 
-            # calculate dalta
+            # calculate delta
             matrix_size = self.upper_q[target] + 1
             matrix = np.eye(matrix_size) * np.arange(0, matrix_size) ** 2 * (-self.penalty_list[target]) * kappa
 
