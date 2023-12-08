@@ -17,7 +17,7 @@ async def main(url, data_list):
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [send_post_request(session, url, data) for data in data_list]
         responses = await asyncio.gather(*tasks)
-        session.close()
+        await session.close()
         return responses
 #初始化
 username = 'UBIQ_TEAM359'
