@@ -76,20 +76,18 @@ class QuantBot:
         lambda_pos = self.lambda_list[target][0]
         lambda_neg = self.lambda_list[target][1]
         LOB = self.api.sendGetLimitOrderBook(self.token_ub, self.instruments[target])  # get LOB
-        # trade_info contains all order being traded in the last 0.1s,
-        # get trade_info so you can update your activeorder,
-        # refer to picture in wechat group for the form of trade_info
-        trade_info = self.api.sendGetTrade(self.token_ub, self.instruments[target])
+        trade_info = self.api.sendGetTrade(self.token_ub, self.instruments[
+            target])  # trade_info contains all order being traded in the last 0.1s, get trade_info so you can update your activeorder, refer to picture in wechat group for the form of trade_info
         t = ConvertToSimTime_us(self.start_time, self.time_ratio, self.day, self.running_time)
 
         # update active order
-        if trade_info['trade_list']:
+        if (trade_info['trade_list']):
             if (trade_info['trade_list'][-1]['trade_index']) not in self.trade_list[target]:
                 for order in trade_info['trade_list']:
                     if order['trade_index'] not in self.trade_list[target]:  # 这里可以优化
                         self.trade_list.append(order['trade_index'])
-                        # for every buy order seccessfully traded, add volume to position and update your activeorder
-                        if order['order_index'] in self.activeorder_buy[target][:, 0]:
+                        if order['order_index'] in self.activeorder_buy[target][:,
+                                                   0]:  # for every buy order seccessfully traded, add volume to position and update your activeorder
                             self.position[target] += order['trade_volume']
                             index = np.where(self.activeorder_buy[target][:, 0] == order['order_index'])
                             if order['remain_volume'] == 0:
@@ -118,7 +116,7 @@ class QuantBot:
             bidvol = np.array([float(k) for k in LOB["lob"]["bidvolume"]])
             mid = (askprice[0] + bidprice[0]) / 2
 
-            # calculate delta
+            # calculate dalta
             matrix_size = self.upper_q[target] + 1
             matrix = np.eye(matrix_size) * np.arange(0, matrix_size) ** 2 * (-self.penalty_list[target]) * kappa
 
@@ -131,11 +129,11 @@ class QuantBot:
             omega = expm(matrix) @ np.exp(np.arange(0, matrix_size) ** 2 * (-self.alpha_list[target]) * kappa)
             h = 1 / kappa * np.log(omega)
             q = int(self.position[target] / 100)
-            if q != 0:
+            if (q != 0):
                 delta_pos = 1 / kappa_pos - h[q - 1] + h[q]
             else:
                 delta_pos = float('inf')
-            if q != self.upper_q[target]:
+            if (q != self.upper_q[target]):
                 delta_neg = 1 / kappa_neg - h[q + 1] + h[q]
             else:
                 delta_neg = float('inf')
@@ -143,8 +141,12 @@ class QuantBot:
             # send/cancel order
             buy_price = np.floor((mid - delta_neg) * 100) / 100
             sell_price = np.ceil((mid + delta_pos) * 100) / 100
+            if self.activeorder_buy[target].size:
+                if sell_price <= self.activeorder_buy[target][-1, 1]:
+                    sell_price = self.activeorder_buy[target][-1, 1] + 0.01
             sell_traded = False
             buy_traded = False
+
             if (sell_price != self.sell_price[target]) and (delta_pos < 100):
                 if self.activeorder_sell[target].size:
                     res = self.api.sendCancel(self.token_ub, self.instruments[target], t,
@@ -155,13 +157,18 @@ class QuantBot:
                     else:
                         self.activeorder_sell[target] = self.activeorder_sell[target][1:]
                 if not sell_traded:
+                    volume = int(np.min([self.position[target], self.volume_list[target]]))
                     response = self.api.sendOrder(self.token_ub, self.instruments[target], t, 'sell', sell_price,
-                                                  self.volume_list[target])
-                    self.activeorder_sell[target] = np.append(
-                        self.activeorder_sell[target],
-                        [[response['index'], sell_price, self.volume_list[target]]],
-                        axis=0)
-                    self.sell_price[target] = sell_price
+                                                  volume)
+                    if response['status'] == 'Success':
+                        self.activeorder_sell[target] = np.append(self.activeorder_sell[target],
+                                                                  [[response['index'], sell_price, volume]], axis=0)
+                        self.sell_price[target] = sell_price
+                    else:
+                        print(response)
+            if self.activeorder_sell[target].size:
+                if buy_price >= self.activeorder_sell[target][0, 1]:
+                    buy_price = self.activeorder_buy[target][0, 1] - 0.01
             if (buy_price != self.buy_price[target]) and (delta_neg < 100):
                 if self.activeorder_buy[target].size:
                     res = self.api.sendCancel(self.token_ub, self.instruments[target], t,
@@ -172,11 +179,12 @@ class QuantBot:
                     else:
                         self.activeorder_buy[target] = self.activeorder_buy[target][1:]
                 if not buy_traded:
-                    response = self.api.sendOrder(self.token_ub, self.instruments[target], t, 'buy', buy_price,
-                                                  self.volume_list[target])
+                    volume = int(np.min([self.upper_q[target] * 100 - self.position[target], self.volume_list[target]]))
+
+                    response = self.api.sendOrder(self.token_ub, self.instruments[target], t, 'buy', buy_price, volume)
+
                     self.activeorder_buy[target] = np.append(self.activeorder_buy[target],
-                                                             [[response['index'], buy_price, self.volume_list[target]]],
-                                                             axis=0)
+                                                             [[response['index'], buy_price, volume]], axis=0)
                     self.buy_price[target] = buy_price
 
     def cancel_all_order(self, target):

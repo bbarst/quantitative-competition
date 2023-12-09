@@ -34,7 +34,6 @@ class InterfaceClass:
         url = self.domain_name + "/api/TradeAPI/GetGAmeInfo"
 
     def sendOrder(self, token_ub, instrument, localtime, direction, price, volume):
-
         url = self.domain_name + "/api/TradeAPI/Order"
         data = {
             "token_ub": token_ub,
@@ -46,7 +45,7 @@ class InterfaceClass:
             "volume": volume,
         }
         response = self.session.post(url, data=json.dumps(data)).json()
-        try:
+        if response['status'] == 'Success':
             logger.debug(
                 "Order: localtime:{}, Index: {}, Instrument: {}, "
                 "Direction:{}, Price: {}, Volume:{}".format(
@@ -57,8 +56,6 @@ class InterfaceClass:
                     price,
                     volume)
             )
-        except:
-            print(response)
         return response
 
     def sendCancel(self, token_ub, instrument, localtime, index):
